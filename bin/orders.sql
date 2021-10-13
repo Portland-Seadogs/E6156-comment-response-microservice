@@ -1,8 +1,9 @@
+-- auto-generated definition
 create table orders
 (
-	order_id int auto_increment,
-	customer_id int not null,
-	datetime_placed datetime not null,
-	constraint orders_pk
-		primary key (order_id)
+    order_id        int auto_increment
+        primary key,
+    customer_id     int      not null,
+    datetime_placed datetime not null
 );
+
