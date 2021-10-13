@@ -101,24 +101,30 @@ def find_by_template(db_schema, table_name, template):
     return res
 
 
-def update_record(db_schema, table_name, key_column, key, **kwargs):
+def update_record(db_schema, table_name, conditions, **kwargs):
     """
     Update a database record with the mapping provided
     :param db_schema: Schema name
     :param table_name: Table name
-    :param: key_column: Name of key column
-    :param key: The id of the record to update
+    :param conditions: Row matching condition
     :param kwargs: Mapping of column to value to update
     :return: Database record updated, Throws RDBServiceException() if error occurs
     """
+    if conditions is None or len(conditions) == 0:
+        raise ValueError("Must have at least one condition for a record update.")
+
     update_elements = [f"{key} = {value}" for key, value in kwargs.items()]
     update_sql = ", ".join(update_elements)
+
+    condition_elements = [f"{key} = {value}" for key, value in conditions.items()]
+    condition_sql = ", ".join(condition_elements)
+
     sql = (
         "UPDATE "
         + db_schema + "." + table_name
         + " SET "
         + update_sql
-        + " WHERE " + key_column + " = " + key
+        + " WHERE " + condition_elements
     )
     return _execute_db_commit_query(sql)
 
