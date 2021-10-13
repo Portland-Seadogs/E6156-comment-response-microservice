@@ -5,4 +5,4 @@ COPY . .
 RUN pip3 install -r requirements.txt
 
 ENV FLASK_APP="application"
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+CMD [ "python3", "-m" , "flask", "run"]
