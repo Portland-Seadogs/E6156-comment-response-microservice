@@ -10,6 +10,15 @@ class ArtCatalogResource(BaseApplicationResource):
     def __init__(self):
         super().__init__()
 
+    @classmethod
+    def _order_exists(cls, order_id):
+        # check if order exists
+        found_orders = d_service.find_by_template(
+            cls.db_schema, cls.order_record_table, {"order_id": order_id}
+        )
+
+        # if order does not exist, return None
+        return len(found_orders) > 0
 
     ## ORDERS #
 
@@ -41,13 +50,10 @@ class ArtCatalogResource(BaseApplicationResource):
 
     @classmethod # DONE
     def remove_order_by_id(cls, order_id):
-        # check if order exists
-        found_orders = d_service.find_by_template(
-            cls.db_schema, cls.order_record_table, {"order_id": order_id}
-        )
+        order_exists = cls._order_exists(order_id)
 
         # if order does not exist, return None
-        if len(found_orders) == 0:
+        if not order_exists:
             return None
 
         all_items_in_order = cls.retrieve_all_items_in_given_order(order_id, href=False)
@@ -103,13 +109,10 @@ class ArtCatalogResource(BaseApplicationResource):
                 })
             return retval
         else:
-            # check if order exists
-            found_orders = d_service.find_by_template(
-                cls.db_schema, cls.order_record_table, {"order_id": order_id}
-            )
+            order_exists = cls._order_exists(order_id)
 
             # if order does not exist, return None
-            if len(found_orders) == 0:
+            if not order_exists:
                 return None
 
             # else return the items in this order. could be an empty array if the order does not yet have any entries
@@ -120,13 +123,10 @@ class ArtCatalogResource(BaseApplicationResource):
 
     @classmethod  # DONE, WORKS!
     def retrieve_single_item_in_given_order(cls, order_id, item_id):
-        # check if order exists
-        found_orders = d_service.find_by_template(
-            cls.db_schema, cls.order_record_table, {"order_id": order_id}
-        )
+        order_exists = cls._order_exists(order_id)
 
         # if order does not exist, return None
-        if len(found_orders) == 0:
+        if not order_exists:
             return None
 
         # get item with ID in order with ID
@@ -142,13 +142,10 @@ class ArtCatalogResource(BaseApplicationResource):
 
     @classmethod # DONE
     def remove_item_from_order(cls, order_id, item_id):
-        # check if order exists
-        found_orders = d_service.find_by_template(
-            cls.db_schema, cls.order_record_table, {"order_id": order_id}
-        )
+        order_exists = cls._order_exists(order_id)
 
         # if order does not exist, return None
-        if len(found_orders) == 0:
+        if not order_exists:
             return None
 
         # check if item already exists in order
