@@ -6,7 +6,7 @@ services:
     container_name: "orders_microservice"
     restart: unless-stopped
     ports:
-      - "10000:10000"
+      - "5000:5000"
     environment:
       - DB_HOST=host
       - DB_USER=user
