@@ -15,6 +15,23 @@ CORS(app)
 def health_check():
     return "<u>Hello World</u>"
 
+@app.route("/api/orders", methods=["GET"])
+def all_orders():
+    pass
+
+@app.route("/api/orders/<int:order_id>", methods=["GET", "DELETE"])
+def selected_order(order_id):
+    pass
+
+@app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"])
+def all_items_for_order(order_id):
+    pass
+
+@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>", methods=["GET", "POST", "PUT", "DELETE"])
+def item_in_order(order_id, item_id):
+    pass
+
+## OLD ROUTES (for reference, remove later)
 
 @app.route("/api/catalog", methods=["GET"])
 def get_full_catalog():
