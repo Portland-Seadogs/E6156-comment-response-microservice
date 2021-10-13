@@ -2,7 +2,7 @@ from application_services.base_application_resource import BaseApplicationResour
 import database_services.rdb_service as d_service
 
 
-class ArtCatalogResource(BaseApplicationResource):
+class ArtCatalogOrdersResource(BaseApplicationResource):
     db_schema = "art_catalog"
     order_record_table = "orders"
     order_contents_table = "order_items"

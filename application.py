@@ -1,6 +1,6 @@
 from flask import Flask, Response, request
 from flask_cors import CORS
-from application_services.art_catalog_resource import ArtCatalogResource
+from application_services.art_catalog_orders_resource import ArtCatalogOrdersResource
 from http import HTTPStatus
 import json
 import logging
@@ -27,7 +27,7 @@ def health_check():
 @app.route("/api/orders", methods=["GET", "POST"]) # WORKS!
 def orders():
     if request.method == "GET":
-        res = ArtCatalogResource.retrieve_all_orders()
+        res = ArtCatalogOrdersResource.retrieve_all_orders()
         return Response(
             form_response_json("success", res),
             status=HTTPStatus.OK,
@@ -35,7 +35,7 @@ def orders():
         )
     elif request.method == "POST":
         order_base_info = request.get_json()
-        res = ArtCatalogResource.add_new_order(order_base_info)
+        res = ArtCatalogOrdersResource.add_new_order(order_base_info)
         rsp = Response(json.dumps(res), status=200, content_type="application/json")
         return rsp
 
@@ -43,10 +43,10 @@ def orders():
 @app.route("/api/orders/<int:order_id>", methods=["GET", "DELETE"])
 def selected_order(order_id): # TODO: DRY refactoring
     if request.method == "GET":
-        res = ArtCatalogResource.retrieve_single_order(order_id=order_id)
+        res = ArtCatalogOrdersResource.retrieve_single_order(order_id=order_id)
         retval = res
     else: # request.method == "DELETE":
-        res = ArtCatalogResource.remove_order_by_id(order_id)
+        res = ArtCatalogOrdersResource.remove_order_by_id(order_id)
         retval = {"order_id": order_id}
 
     if res is not None:
@@ -65,7 +65,7 @@ def selected_order(order_id): # TODO: DRY refactoring
 
 @app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"])
 def all_items_for_order(order_id): # WORKS!
-    res = ArtCatalogResource.retrieve_all_items_in_given_order(order_id=order_id)
+    res = ArtCatalogOrdersResource.retrieve_all_items_in_given_order(order_id=order_id)
     if res is None:
         return Response(
             form_response_json("order not found", None),
@@ -83,16 +83,16 @@ def all_items_for_order(order_id): # WORKS!
 @app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>", methods=["GET", "POST", "DELETE"])
 def item_in_order(order_id, item_id):
     if request.method == "GET":
-        res = ArtCatalogResource.retrieve_single_item_in_given_order(order_id, item_id)
+        res = ArtCatalogOrdersResource.retrieve_single_item_in_given_order(order_id, item_id)
         retval = res
     elif request.method == "POST": # both to create an entry and to update it
         order_info = request.get_json() # item info in body
         order_info["order_id"] = order_id
         order_info["item_id"] = item_id
-        res = ArtCatalogResource.add_item_to_order(order_info)
+        res = ArtCatalogOrdersResource.add_item_to_order(order_info)
         retval = res
     else: # request.method == "DELETE":
-        res = ArtCatalogResource.remove_item_from_order(order_id, item_id)
+        res = ArtCatalogOrdersResource.remove_item_from_order(order_id, item_id)
         retval = {"order_id": order_id, "item_id": item_id}
 
     if res is None or res is False:
