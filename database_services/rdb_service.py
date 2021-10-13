@@ -111,18 +111,16 @@ def update_record(db_schema, table_name, key_column, key, **kwargs):
     :param kwargs: Mapping of column to value to update
     :return: Database record updated, Throws RDBServiceException() if error occurs
     """
-    update_elements = [key + " = %s" for key in kwargs.keys()]
+    update_elements = [f"{key} = {value}" for key, value in kwargs.items()]
     update_sql = ", ".join(update_elements)
     sql = (
         "UPDATE "
         + db_schema + "." + table_name
         + " SET "
         + update_sql
-        + " WHERE " + key_column + " = %s"
+        + " WHERE " + key_column + " = " + key
     )
-    args = [v for v in kwargs.values()]
-    args.append(key)  # last arg is the item id itself
-    return _execute_db_commit_query(sql, args)
+    return _execute_db_commit_query(sql)
 
 
 def create_new_record(db_schema, table_name, **kwargs):
@@ -158,23 +156,34 @@ def create_new_record(db_schema, table_name, **kwargs):
         conn.close()
 
 
-def delete_record_by_key(db_schema, table_name, key_column, item_id):
+def delete_record_by_multikey(db_schema, table_name, **kwargs):
     """
     Deletes a single record from the database table by key; note that key column must be
     specified
     :param db_schema: Database schema name
     :param table_name: Table name
-    :param key_column: The column name that contains the table key
-    :param item_id: The id of the item to delete
+    :param kwargs: Dictionary containing keys and values to match entries by
     :return:
     """
     sql = (
-        "DELETE FROM " + db_schema + "." + table_name + " WHERE " + key_column + " = %s"
+        "DELETE FROM " + db_schema + "." + table_name
     )
-    return _execute_db_commit_query(sql, item_id)
+
+    if len(kwargs) == 0:
+        raise ValueError("Missing conditions for deletion.")
+
+    sql += " WHERE "
+    first_done = False
+    for k, v in kwargs.items():
+        if first_done: sql += " AND "
+        first_done = True
+
+        sql += f"{k} = {v}"
+
+    return _execute_db_commit_query(sql)
 
 
-def _execute_db_commit_query(sql, args):
+def _execute_db_commit_query(sql):
     """
     Function to execute database query, based on provided sql statement
     :param sql: String version of SQL statement to run
@@ -183,11 +192,10 @@ def _execute_db_commit_query(sql, args):
     conn = _get_db_connection()
     cur = conn.cursor()
     try:
-        res = cur.execute(sql, args=args)
+        res = cur.execute(sql)
         conn.commit()
         return res
     except Exception as e:
         raise RDBServiceException(e)
     finally:
         conn.close()
-
