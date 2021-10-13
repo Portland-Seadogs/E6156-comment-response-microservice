@@ -91,7 +91,7 @@ def item_in_order(order_id, item_id):
         order_info["item_id"] = item_id
         res = ArtCatalogResource.add_item_to_order(order_info)
         retval = res
-    elif request.method == "DELETE":
+    else: # request.method == "DELETE":
         res = ArtCatalogResource.remove_item_from_order(order_id, item_id)
         retval = {"order_id": order_id, "item_id": item_id}
 
