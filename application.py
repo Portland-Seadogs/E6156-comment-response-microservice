@@ -82,13 +82,13 @@ def all_items_for_order(order_id):
         )
 
 
-@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>", methods=["GET", "POST", "DELETE"])
-@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>/", methods=["GET", "POST", "DELETE"])
+@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>", methods=["GET", "PUT", "DELETE"])
+@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>/", methods=["GET", "PUT", "DELETE"])
 def item_in_order(order_id, item_id):
     if request.method == "GET":
         res = ArtCatalogOrdersResource.retrieve_single_item_in_given_order(order_id, item_id)
         retval = res
-    elif request.method == "POST": # both to create an entry and to update it
+    elif request.method == "PUT": # both to create an entry and to update it
         order_info = request.get_json() # item info in body
         order_info["order_id"] = order_id
         order_info["item_id"] = item_id
