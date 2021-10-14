@@ -66,7 +66,7 @@ def selected_order(order_id): # TODO: DRY refactoring
 
 @app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"])
 @app.route("/api/orders/<int:order_id>/orderitems/", methods=["GET"])
-def all_items_for_order(order_id): # WORKS!
+def all_items_for_order(order_id):
     res = ArtCatalogOrdersResource.retrieve_all_items_in_given_order(order_id=order_id)
     if res is None:
         return Response(
@@ -106,7 +106,7 @@ def item_in_order(order_id, item_id):
         )
     else:  # if valued
         return Response(
-            form_response_json("success", res),
+            form_response_json("success", retval),
             status=HTTPStatus.OK,
             content_type="application/json"
         )
