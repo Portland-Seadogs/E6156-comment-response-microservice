@@ -88,11 +88,10 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             cls.db_schema, cls.order_contents_table, **item_order_information
         )
 
-        return {
-            "order_id": item_order_information["order_id"],
-            "item_id": item_order_information["item_id"],
-            "record_id": new_record_id
-        }
+        return cls.retrieve_single_item_in_given_order(
+            item_order_information["order_id"],
+            item_order_information["item_id"]
+        )
 
     @classmethod # DONE, WORKS!
     def retrieve_all_items_in_given_order(cls, order_id, href=False):
