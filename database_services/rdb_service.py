@@ -124,7 +124,7 @@ def update_record(db_schema, table_name, conditions, **kwargs):
         + db_schema + "." + table_name
         + " SET "
         + update_sql
-        + " WHERE " + condition_elements
+        + " WHERE " + condition_sql
     )
     return _execute_db_commit_query(sql)
 

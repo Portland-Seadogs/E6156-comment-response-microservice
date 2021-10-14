@@ -42,12 +42,36 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             return None
 
     @classmethod # DONE, WORKS!
-    def add_new_order(cls, order_information): ## TODO: Create order info beforehand.
+    def add_new_order(cls, order_information):
         new_record_id = d_service.create_new_record(
             cls.db_schema, cls.order_record_table, **order_information
         )
 
         return cls.retrieve_single_order(new_record_id)
+
+    @classmethod  # DONE, WORKS!
+    def update_existing_order(cls, order_id, updated_order_information):
+        order_exists = cls._order_exists(order_id)
+
+        # if order does not exist, return None
+        if not order_exists:
+            return None
+
+        # check if only valid keys are being updated
+        if not all(key in ["customer_id", "datetime_placed"] for key in updated_order_information.keys()) \
+                or len(updated_order_information) == 0:
+            return False
+
+        # quote datetime (if present) | TODO: Does this apply to any other data types?
+        if "datetime_placed" in updated_order_information.keys():
+            updated_order_information["datetime_placed"] = f"\"{updated_order_information['datetime_placed']}\""
+
+        update_retval = d_service.update_record(
+            cls.db_schema, cls.order_record_table, {"order_id": order_id}, **updated_order_information
+        )
+
+        # return updated order object
+        return cls.retrieve_single_order(order_id)
 
     @classmethod # DONE
     def remove_order_by_id(cls, order_id):

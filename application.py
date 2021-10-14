@@ -40,28 +40,41 @@ def orders():
     )
 
 
-@app.route("/api/orders/<int:order_id>", methods=["GET", "DELETE"])
-@app.route("/api/orders/<int:order_id>/", methods=["GET", "DELETE"])
+@app.route("/api/orders/<int:order_id>", methods=["GET", "PUT", "DELETE"])
+@app.route("/api/orders/<int:order_id>/", methods=["GET", "PUT", "DELETE"])
 def selected_order(order_id): # TODO: DRY refactoring
     if request.method == "GET":
         res = ArtCatalogOrdersResource.retrieve_single_order(order_id=order_id)
+        retval = res
+    elif request.method == "PUT":
+        res = ArtCatalogOrdersResource.update_existing_order(
+            order_id=order_id,
+            updated_order_information=request.get_json()
+        )
         retval = res
     else: # request.method == "DELETE":
         res = ArtCatalogOrdersResource.remove_order_by_id(order_id)
         retval = {"order_id": order_id}
 
-    if res is not None:
+    if res is not None and res is not False:
         return Response(
             form_response_json("success", retval),
             status=HTTPStatus.OK,
             content_type="application/json"
         )
     else:
-        return Response(
-            form_response_json("order not found", None),
-            status=HTTPStatus.NOT_FOUND,
-            content_type="application/json"
-        )
+        if res is None:
+            return Response(
+                form_response_json("order not found", None),
+                status=HTTPStatus.NOT_FOUND,
+                content_type="application/json"
+            )
+        elif res is False:
+            return Response(
+                form_response_json("attempt at updating invalid parameters", None),
+                status=HTTPStatus.BAD_REQUEST,
+                content_type="application/json"
+            )
 
 
 @app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"])
