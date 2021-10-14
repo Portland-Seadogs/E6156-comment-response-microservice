@@ -46,7 +46,8 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         new_record_id = d_service.create_new_record(
             cls.db_schema, cls.order_record_table, **order_information
         )
-        return {"order_id": new_record_id}
+
+        return cls.retrieve_single_order(new_record_id)
 
     @classmethod # DONE
     def remove_order_by_id(cls, order_id):
