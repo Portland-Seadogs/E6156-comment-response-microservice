@@ -29,16 +29,15 @@ def health_check():
 def orders():
     if request.method == "GET":
         res = ArtCatalogOrdersResource.retrieve_all_orders()
-        return Response(
-            form_response_json("success", res),
-            status=HTTPStatus.OK,
-            content_type="application/json"
-        )
-    elif request.method == "POST":
+    else: # request.method == "POST":
         order_base_info = request.get_json()
         res = ArtCatalogOrdersResource.add_new_order(order_base_info)
-        rsp = Response(json.dumps(res), status=200, content_type="application/json")
-        return rsp
+
+    return Response(
+        form_response_json("success", res),
+        status=HTTPStatus.OK,
+        content_type="application/json"
+    )
 
 
 @app.route("/api/orders/<int:order_id>", methods=["GET", "DELETE"])
