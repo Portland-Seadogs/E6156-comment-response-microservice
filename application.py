@@ -24,8 +24,7 @@ def health_check():
     return "<u>Hello World</u>"
 
 
-@app.route("/api/orders", methods=["GET", "POST"])
-@app.route("/api/orders/", methods=["GET", "POST"])
+@app.route("/api/orders", methods=["GET", "POST"], strict_slashes=False)
 def orders():
     if request.method == "GET":
         res = ArtCatalogOrdersResource.retrieve_all_orders()
@@ -40,8 +39,7 @@ def orders():
     )
 
 
-@app.route("/api/orders/<int:order_id>", methods=["GET", "PUT", "DELETE"])
-@app.route("/api/orders/<int:order_id>/", methods=["GET", "PUT", "DELETE"])
+@app.route("/api/orders/<int:order_id>", methods=["GET", "PUT", "DELETE"], strict_slashes=False)
 def selected_order(order_id): # TODO: DRY refactoring
     if request.method == "GET":
         res = ArtCatalogOrdersResource.retrieve_single_order(order_id=order_id)
@@ -77,8 +75,7 @@ def selected_order(order_id): # TODO: DRY refactoring
             )
 
 
-@app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"])
-@app.route("/api/orders/<int:order_id>/orderitems/", methods=["GET"])
+@app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"], strict_slashes=False)
 def all_items_for_order(order_id):
     res = ArtCatalogOrdersResource.retrieve_all_items_in_given_order(order_id=order_id)
     if res is None:
@@ -95,8 +92,7 @@ def all_items_for_order(order_id):
         )
 
 
-@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>", methods=["GET", "PUT", "DELETE"])
-@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>/", methods=["GET", "PUT", "DELETE"])
+@app.route("/api/orders/<int:order_id>/orderitems/<int:item_id>", methods=["GET", "PUT", "DELETE"], strict_slashes=False)
 def item_in_order(order_id, item_id):
     if request.method == "GET":
         res = ArtCatalogOrdersResource.retrieve_single_item_in_given_order(order_id, item_id)
