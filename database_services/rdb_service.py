@@ -25,11 +25,14 @@ def _get_db_connection():
     return db_connection
 
 
-def fetch_all_records(db_schema, table_name, offset, limit):
+def fetch_all_records(db_schema, table_name, offset, limit, fields):
     conn = _get_db_connection()
     cur = conn.cursor()
 
-    sql = "SELECT * FROM " + db_schema + "." + table_name
+    if fields is None:
+        sql = "SELECT * FROM " + db_schema + "." + table_name
+    else:
+        sql = f"SELECT {', '.join(fields)} FROM " + db_schema + "." + table_name
 
     if offset is not None and limit is not None:
         sql += f" LIMIT {offset},{limit}"
@@ -40,10 +43,13 @@ def fetch_all_records(db_schema, table_name, offset, limit):
 
     print("sql statement = " + cur.mogrify(sql, None))
 
-    res = cur.execute(sql)
+    try:
+        res = cur.execute(sql)
+    except pymysql.err.OperationalError as e:
+        return False, (e.args[0], e.args[1])  # False == failure
     res = cur.fetchall()
     conn.close()
-    return res
+    return True, res
 
 
 def get_by_prefix(db_schema, table_name, column_name, value_prefix):
@@ -89,7 +95,7 @@ def _get_where_clause_args(template):
     return clause, args
 
 
-def find_by_template(db_schema, table_name, template, offset, limit):
+def find_by_template(db_schema, table_name, template, offset=None, limit=None, fields=None):
     """
     Find an individual record by SQL template.
     :param db_schema: Schema name
@@ -101,7 +107,11 @@ def find_by_template(db_schema, table_name, template, offset, limit):
     cur = conn.cursor()
 
     where_clause, args = _get_where_clause_args(template)
-    sql = "SELECT * FROM " + db_schema + "." + table_name + " " + where_clause
+
+    if fields is None:
+        sql = "SELECT * FROM " + db_schema + "." + table_name + " " + where_clause
+    else:
+        sql = f"SELECT {', '.join(fields)} FROM " + db_schema + "." + table_name + " " + where_clause
 
     if offset is not None and limit is not None:
         sql += f" LIMIT {offset},{limit}"
@@ -110,10 +120,13 @@ def find_by_template(db_schema, table_name, template, offset, limit):
     elif offset is None and limit is not None:
         sql += f" LIMIT {limit}"
 
-    res = cur.execute(sql, args)
+    try:
+        res = cur.execute(sql, args)
+    except pymysql.err.OperationalError as e:
+        return False, (e.args[0], e.args[1])  # False == failure
     res = cur.fetchall()
     conn.close()
-    return res
+    return True, res
 
 
 def update_record(db_schema, table_name, conditions, **kwargs):

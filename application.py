@@ -27,7 +27,7 @@ def health_check():
 @app.route("/api/orders", methods=["GET", "POST"], strict_slashes=False)
 def orders():
     if request.method == "GET":
-        limit = request.args.get("Limit")
+        limit = request.args.get("limit")
         offset = request.args.get("offset")
         fields = request.args.get("fields")
         res = ArtCatalogOrdersResource.retrieve_all_orders(limit, offset, fields)
@@ -35,11 +35,18 @@ def orders():
         order_base_info = request.get_json()
         res = ArtCatalogOrdersResource.add_new_order(order_base_info)
 
-    return Response(
-        form_response_json("success", res),
-        status=HTTPStatus.OK,
-        content_type="application/json"
-    )
+    if res[0] is True:
+        return Response(
+            form_response_json("success", res),
+            status=HTTPStatus.OK,
+            content_type="application/json"
+        )
+    else:
+        return Response(
+            form_response_json(f"failure - {res[1][1]}", None),
+            status=HTTPStatus.BAD_REQUEST,
+            content_type="application/json"
+        )
 
 
 @app.route("/api/orders/<int:order_id>", methods=["GET", "PUT", "DELETE"], strict_slashes=False)
@@ -80,19 +87,20 @@ def selected_order(order_id):
 
 @app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"], strict_slashes=False)
 def all_items_for_order(order_id):
-    limit = request.args.get("Limit")
+    limit = request.args.get("limit")
     offset = request.args.get("offset")
     fields = request.args.get("fields")
-    res = ArtCatalogOrdersResource.retrieve_all_items_in_given_order(order_id=order_id, limit=limit, offset=offset)
-    if res is None:
+    res = ArtCatalogOrdersResource.retrieve_all_items_in_given_order(order_id=order_id, limit=limit,
+                                                                     offset=offset, fields=fields)
+    if res[0] is False:
         return Response(
-            form_response_json("order not found", None),
-            status=HTTPStatus.NOT_FOUND,
+            form_response_json("order not found" if res[1] is None else res[1][1], None),
+            status=HTTPStatus.NOT_FOUND if res[1] is None else HTTPStatus.BAD_REQUEST,
             content_type="application/json"
         )
     else:
         return Response(
-            form_response_json("success", res),
+            form_response_json("success", res[1]),
             status=HTTPStatus.OK,
             content_type="application/json"
         )

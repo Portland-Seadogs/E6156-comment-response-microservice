@@ -14,29 +14,41 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
     def _order_exists(cls, order_id):
         # check if order exists
         found_orders = d_service.find_by_template(
-            cls.db_schema, cls.order_record_table, {"order_id": order_id}
+            cls.db_schema, cls.order_record_table, {"order_id": order_id}, None, None, None
         )
 
         # if order does not exist, return None
-        return len(found_orders) > 0
+        return len(found_orders[1]) > 0 if found_orders[0] is True else False
 
     ## ORDERS #
 
     @classmethod # DONE, WORKS!
     def retrieve_all_orders(cls, limit, offset, fields):
-        found_orders = d_service.fetch_all_records(cls.db_schema, cls.order_record_table, offset, limit)
-        for order in found_orders:
-            order["links"] = cls.retrieve_all_items_in_given_order(order["order_id"], href=True)
-        return found_orders
+        new_fields = fields.split(",") if fields is not None else None
+        if new_fields is not None and "links" in new_fields:
+            new_fields.remove("links")
+
+        found_order_result = d_service.fetch_all_records(cls.db_schema,
+                                                   cls.order_record_table,
+                                                   offset,
+                                                   limit,
+                                                   new_fields)
+
+        if found_order_result[0] is True and fields is None or (fields is not None and "links" in fields):
+            for order in found_order_result[1]:
+                order["links"] = cls.retrieve_all_items_in_given_order(order["order_id"], href=True)[1]
+
+        return found_order_result
 
     @classmethod # DONE, WORKS!
     def retrieve_single_order(cls, order_id):
         found_orders = d_service.find_by_template(
             cls.db_schema, cls.order_record_table, {"order_id": order_id}
-        )
+        )[1]
+
         if len(found_orders) > 0:
             found_order = found_orders[0]
-            found_order["links"] = cls.retrieve_all_items_in_given_order(found_order["order_id"], href=True)
+            found_order["links"] = cls.retrieve_all_items_in_given_order(found_order["order_id"], href=True)[1]
             return found_order
         else:
             return None
@@ -81,7 +93,7 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         if not order_exists:
             return None
 
-        all_items_in_order = cls.retrieve_all_items_in_given_order(order_id, href=False)
+        all_items_in_order = cls.retrieve_all_items_in_given_order(order_id, href=False)[1]
 
         # delete all items in order before deleting order itself
         for i in all_items_in_order:
@@ -119,29 +131,36 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         )
 
     @classmethod # DONE, WORKS!
-    def retrieve_all_items_in_given_order(cls, order_id, href=False, limit=None, offset=None):
+    def retrieve_all_items_in_given_order(cls, order_id, href=False, limit=None, offset=None, fields=None):
         if href:
-            all_items_in_order = d_service.find_by_template(
-                cls.db_schema, cls.order_contents_table, {"order_id": order_id}, offset, limit
+            res = d_service.find_by_template(
+                cls.db_schema, cls.order_contents_table,
+                {"order_id": order_id}, offset, limit,
+                fields.split(",") if fields is not None else None
             )
 
+            if res[0] is False:
+                return res
+
+            all_items_in_order = res[1]
             retval = []
             for i in all_items_in_order:
                 retval.append({
                     "href": f'/orders/{order_id}/orderitems/{i["item_id"]}',
                     "rel": "order_item"
                 })
-            return retval
+            return True, retval
         else:
             order_exists = cls._order_exists(order_id)
 
             # if order does not exist, return None
             if not order_exists:
-                return None
+                return False, None
 
             # else return the items in this order. could be an empty array if the order does not yet have any entries
             return d_service.find_by_template(
-                cls.db_schema, cls.order_contents_table, {"order_id": order_id}, offset, limit
+                cls.db_schema, cls.order_contents_table, {"order_id": order_id}, offset, limit,
+                fields.split(",") if fields is not None else None
             )
 
 
@@ -156,7 +175,7 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         # get item with ID in order with ID
         item_in_order = d_service.find_by_template(
             cls.db_schema, cls.order_contents_table, {"order_id": order_id, "item_id": item_id}
-        )
+        )[1]
 
         if item_in_order is None or len(item_in_order) == 0:
             return False
