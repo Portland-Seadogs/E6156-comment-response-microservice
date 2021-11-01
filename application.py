@@ -37,7 +37,7 @@ def orders():
 
     if res[0] is True:
         return Response(
-            form_response_json("success", res),
+            form_response_json("success", res[1]),
             status=HTTPStatus.OK,
             content_type="application/json"
         )
@@ -116,7 +116,7 @@ def item_in_order(order_id, item_id):
         order_info["order_id"] = order_id
         order_info["item_id"] = item_id
         res = ArtCatalogOrdersResource.add_item_to_order(order_info)
-        retval = res
+        retval = res[1]
     else: # request.method == "DELETE":
         res = ArtCatalogOrdersResource.remove_item_from_order(order_id, item_id)
         retval = {"order_id": order_id, "item_id": item_id}

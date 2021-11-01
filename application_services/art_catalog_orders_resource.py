@@ -59,7 +59,7 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             cls.db_schema, cls.order_record_table, **order_information
         )
 
-        return cls.retrieve_single_order(new_record_id)
+        return True, { "location": f"/api/orders/{new_record_id}" }
 
     @classmethod  # DONE, WORKS!
     def update_existing_order(cls, order_id, updated_order_information):
@@ -125,10 +125,8 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             cls.db_schema, cls.order_contents_table, **item_order_information
         )
 
-        return cls.retrieve_single_item_in_given_order(
-            item_order_information["order_id"],
-            item_order_information["item_id"]
-        )
+        return True, \
+               { "location": f"/api/orders/{item_order_information['order_id']}/orderitems/{item_order_information['item_id']}" }
 
     @classmethod # DONE, WORKS!
     def retrieve_all_items_in_given_order(cls, order_id, href=False, limit=None, offset=None, fields=None):
