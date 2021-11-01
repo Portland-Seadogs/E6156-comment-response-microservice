@@ -43,7 +43,7 @@ def orders():
         )
     else:
         return Response(
-            form_response_json(f"failure - {res[1][1]}", None),
+            form_response_json(res[1][1], None),
             status=HTTPStatus.BAD_REQUEST,
             content_type="application/json"
         )
