@@ -128,9 +128,16 @@ def item_in_order(order_id, item_id):
             content_type="application/json"
         )
     else:  # if valued
+        if request.method == "DELETE":
+            code = HTTPStatus.NO_CONTENT
+        elif request.method == "PUT":
+            code = HTTPStatus.CREATED
+        else:
+            code = HTTPStatus.OK
+
         return Response(
             form_response_json("success", retval),
-            status=HTTPStatus.OK if request.method != "DELETE" else HTTPStatus.NO_CONTENT,
+            status=code,
             content_type="application/json"
         )
 
