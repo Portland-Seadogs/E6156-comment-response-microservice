@@ -67,7 +67,7 @@ def selected_order(order_id):
     if res is not None and res is not False:
         return Response(
             form_response_json("success", retval),
-            status=HTTPStatus.OK,
+            status=HTTPStatus.OK if request.method != "DELETE" else HTTPStatus.NO_CONTENT,
             content_type="application/json"
         )
     else:
@@ -130,7 +130,7 @@ def item_in_order(order_id, item_id):
     else:  # if valued
         return Response(
             form_response_json("success", retval),
-            status=HTTPStatus.OK,
+            status=HTTPStatus.OK if request.method != "DELETE" else HTTPStatus.NO_CONTENT,
             content_type="application/json"
         )
 
