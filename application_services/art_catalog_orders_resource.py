@@ -23,8 +23,8 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
     ## ORDERS #
 
     @classmethod # DONE, WORKS!
-    def retrieve_all_orders(cls):
-        found_orders = d_service.fetch_all_records(cls.db_schema, cls.order_record_table)
+    def retrieve_all_orders(cls, limit, offset, fields):
+        found_orders = d_service.fetch_all_records(cls.db_schema, cls.order_record_table, offset, limit)
         for order in found_orders:
             order["links"] = cls.retrieve_all_items_in_given_order(order["order_id"], href=True)
         return found_orders
@@ -119,10 +119,10 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         )
 
     @classmethod # DONE, WORKS!
-    def retrieve_all_items_in_given_order(cls, order_id, href=False):
+    def retrieve_all_items_in_given_order(cls, order_id, href=False, limit=None, offset=None):
         if href:
             all_items_in_order = d_service.find_by_template(
-                cls.db_schema, cls.order_contents_table, {"order_id": order_id}
+                cls.db_schema, cls.order_contents_table, {"order_id": order_id}, offset, limit
             )
 
             retval = []
@@ -141,7 +141,7 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
 
             # else return the items in this order. could be an empty array if the order does not yet have any entries
             return d_service.find_by_template(
-                cls.db_schema, cls.order_contents_table, {"order_id": order_id}
+                cls.db_schema, cls.order_contents_table, {"order_id": order_id}, offset, limit
             )
 
 

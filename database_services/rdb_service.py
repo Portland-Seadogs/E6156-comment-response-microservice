@@ -25,11 +25,19 @@ def _get_db_connection():
     return db_connection
 
 
-def fetch_all_records(db_schema, table_name):
+def fetch_all_records(db_schema, table_name, offset, limit):
     conn = _get_db_connection()
     cur = conn.cursor()
 
     sql = "SELECT * FROM " + db_schema + "." + table_name
+
+    if offset is not None and limit is not None:
+        sql += f" LIMIT {offset},{limit}"
+    elif offset is not None and limit is None:
+        sql += f" LIMIT {offset},18446744073709551615"
+    elif offset is None and limit is not None:
+        sql += f" LIMIT {limit}"
+
     print("sql statement = " + cur.mogrify(sql, None))
 
     res = cur.execute(sql)
@@ -81,7 +89,7 @@ def _get_where_clause_args(template):
     return clause, args
 
 
-def find_by_template(db_schema, table_name, template):
+def find_by_template(db_schema, table_name, template, offset, limit):
     """
     Find an individual record by SQL template.
     :param db_schema: Schema name
@@ -94,6 +102,13 @@ def find_by_template(db_schema, table_name, template):
 
     where_clause, args = _get_where_clause_args(template)
     sql = "SELECT * FROM " + db_schema + "." + table_name + " " + where_clause
+
+    if offset is not None and limit is not None:
+        sql += f" LIMIT {offset},{limit}"
+    elif offset is not None and limit is None:
+        sql += f" LIMIT {offset},18446744073709551615"
+    elif offset is None and limit is not None:
+        sql += f" LIMIT {limit}"
 
     res = cur.execute(sql, args)
     res = cur.fetchall()

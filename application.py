@@ -27,7 +27,10 @@ def health_check():
 @app.route("/api/orders", methods=["GET", "POST"], strict_slashes=False)
 def orders():
     if request.method == "GET":
-        res = ArtCatalogOrdersResource.retrieve_all_orders()
+        limit = request.args.get("Limit")
+        offset = request.args.get("offset")
+        fields = request.args.get("fields")
+        res = ArtCatalogOrdersResource.retrieve_all_orders(limit, offset, fields)
     else: # request.method == "POST":
         order_base_info = request.get_json()
         res = ArtCatalogOrdersResource.add_new_order(order_base_info)
@@ -40,7 +43,7 @@ def orders():
 
 
 @app.route("/api/orders/<int:order_id>", methods=["GET", "PUT", "DELETE"], strict_slashes=False)
-def selected_order(order_id): # TODO: DRY refactoring
+def selected_order(order_id):
     if request.method == "GET":
         res = ArtCatalogOrdersResource.retrieve_single_order(order_id=order_id)
         retval = res
@@ -77,7 +80,10 @@ def selected_order(order_id): # TODO: DRY refactoring
 
 @app.route("/api/orders/<int:order_id>/orderitems", methods=["GET"], strict_slashes=False)
 def all_items_for_order(order_id):
-    res = ArtCatalogOrdersResource.retrieve_all_items_in_given_order(order_id=order_id)
+    limit = request.args.get("Limit")
+    offset = request.args.get("offset")
+    fields = request.args.get("fields")
+    res = ArtCatalogOrdersResource.retrieve_all_items_in_given_order(order_id=order_id, limit=limit, offset=offset)
     if res is None:
         return Response(
             form_response_json("order not found", None),
