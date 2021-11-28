@@ -11,36 +11,57 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         super().__init__()
 
     @classmethod
+    def get_links(cls, resource_data):
+        pass
+
+    @classmethod
     def _order_exists(cls, order_id):
         # check if order exists
         found_orders = d_service.find_by_template(
-            cls.db_schema, cls.order_record_table, {"order_id": order_id}, None, None, None
+            cls.db_schema,
+            cls.order_record_table,
+            {"order_id": order_id},
+            None,
+            None,
+            None,
         )
 
         # if order does not exist, return None
         return len(found_orders[1]) > 0 if found_orders[0] is True else False
 
-    ## ORDERS #
-
-    @classmethod # DONE, WORKS!
-    def retrieve_all_orders(cls, limit, offset, fields):
+    @classmethod
+    def retrieve_all_orders(cls, limit, offset, fields, user):
         new_fields = fields.split(",") if fields is not None else None
         if new_fields is not None and "links" in new_fields:
             new_fields.remove("links")
 
-        found_order_result = d_service.fetch_all_records(cls.db_schema,
-                                                   cls.order_record_table,
-                                                   offset,
-                                                   limit,
-                                                   new_fields)
+        if not user:
+            found_order_result = d_service.fetch_all_records(
+                cls.db_schema, cls.order_record_table, offset, limit, new_fields
+            )
+        else:  # if user is specified, only find the order information for that user
+            found_order_result = d_service.find_by_template(
+                cls.db_schema,
+                cls.order_record_table,
+                {"customer_id": user},
+                offset,
+                limit,
+                new_fields,
+            )
 
-        if found_order_result[0] is True and fields is None or (fields is not None and "links" in fields):
+        if (
+            found_order_result[0] is True
+            and fields is None
+            or (fields is not None and "links" in fields)
+        ):
             for order in found_order_result[1]:
-                order["links"] = cls.retrieve_all_items_in_given_order(order["order_id"], href=True)[1]
+                order["links"] = cls.retrieve_all_items_in_given_order(
+                    order["order_id"], href=True
+                )[1]
 
         return found_order_result
 
-    @classmethod # DONE, WORKS!
+    @classmethod
     def retrieve_single_order(cls, order_id):
         found_orders = d_service.find_by_template(
             cls.db_schema, cls.order_record_table, {"order_id": order_id}
@@ -48,20 +69,22 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
 
         if len(found_orders) > 0:
             found_order = found_orders[0]
-            found_order["links"] = cls.retrieve_all_items_in_given_order(found_order["order_id"], href=True)[1]
+            found_order["links"] = cls.retrieve_all_items_in_given_order(
+                found_order["order_id"], href=True
+            )[1]
             return found_order
         else:
             return None
 
-    @classmethod # DONE, WORKS!
+    @classmethod
     def add_new_order(cls, order_information):
         new_record_id = d_service.create_new_record(
             cls.db_schema, cls.order_record_table, **order_information
         )
 
-        return True, { "location": f"/api/orders/{new_record_id}" }
+        return True, {"location": f"/api/orders/{new_record_id}"}
 
-    @classmethod  # DONE, WORKS!
+    @classmethod
     def update_existing_order(cls, order_id, updated_order_information):
         order_exists = cls._order_exists(order_id)
 
@@ -70,22 +93,32 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             return None
 
         # check if only valid keys are being updated
-        if not all(key in ["customer_id", "datetime_placed"] for key in updated_order_information.keys()) \
-                or len(updated_order_information) == 0:
+        if (
+            not all(
+                key in ["customer_id", "datetime_placed"]
+                for key in updated_order_information.keys()
+            )
+            or len(updated_order_information) == 0
+        ):
             return False
 
         # quote datetime (if present) | TODO: Does this apply to any other data types?
         if "datetime_placed" in updated_order_information.keys():
-            updated_order_information["datetime_placed"] = f"\"{updated_order_information['datetime_placed']}\""
+            updated_order_information[
+                "datetime_placed"
+            ] = f"\"{updated_order_information['datetime_placed']}\""
 
         update_retval = d_service.update_record(
-            cls.db_schema, cls.order_record_table, {"order_id": order_id}, **updated_order_information
+            cls.db_schema,
+            cls.order_record_table,
+            {"order_id": order_id},
+            **updated_order_information,
         )
 
         # return updated order object
         return cls.retrieve_single_order(order_id)
 
-    @classmethod # DONE
+    @classmethod
     def remove_order_by_id(cls, order_id):
         order_exists = cls._order_exists(order_id)
 
@@ -93,7 +126,9 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         if not order_exists:
             return None
 
-        all_items_in_order = cls.retrieve_all_items_in_given_order(order_id, href=False)[1]
+        all_items_in_order = cls.retrieve_all_items_in_given_order(
+            order_id, href=False
+        )[1]
 
         # delete all items in order before deleting order itself
         for i in all_items_in_order:
@@ -103,17 +138,12 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             cls.db_schema, cls.order_record_table, order_id=order_id
         )
 
-    # TODO: Need to update order record itself in any way? (probably not)
-
-    ## ORDER CONTENTS ##
-
-    @classmethod # DONE
+    @classmethod
     def add_item_to_order(cls, item_order_information):
         # TODO: Check data validity?
 
         removal_result = cls.remove_item_from_order(
-            item_order_information["order_id"],
-            item_order_information["item_id"]
+            item_order_information["order_id"], item_order_information["item_id"]
         )
 
         # order does not exist
@@ -125,16 +155,22 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             cls.db_schema, cls.order_contents_table, **item_order_information
         )
 
-        return True, \
-               { "location": f"/api/orders/{item_order_information['order_id']}/orderitems/{item_order_information['item_id']}" }
+        return True, {
+            "location": f"/api/orders/{item_order_information['order_id']}/orderitems/{item_order_information['item_id']}"
+        }
 
-    @classmethod # DONE, WORKS!
-    def retrieve_all_items_in_given_order(cls, order_id, href=False, limit=None, offset=None, fields=None):
+    @classmethod
+    def retrieve_all_items_in_given_order(
+        cls, order_id, href=False, limit=None, offset=None, fields=None
+    ):
         if href:
             res = d_service.find_by_template(
-                cls.db_schema, cls.order_contents_table,
-                {"order_id": order_id}, offset, limit,
-                fields.split(",") if fields is not None else None
+                cls.db_schema,
+                cls.order_contents_table,
+                {"order_id": order_id},
+                offset,
+                limit,
+                fields.split(",") if fields is not None else None,
             )
 
             if res[0] is False:
@@ -143,10 +179,12 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             all_items_in_order = res[1]
             retval = []
             for i in all_items_in_order:
-                retval.append({
-                    "href": f'/orders/{order_id}/orderitems/{i["item_id"]}',
-                    "rel": "order_item"
-                })
+                retval.append(
+                    {
+                        "href": f'/orders/{order_id}/orderitems/{i["item_id"]}',
+                        "rel": "order_item",
+                    }
+                )
             return True, retval
         else:
             order_exists = cls._order_exists(order_id)
@@ -155,14 +193,18 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             if not order_exists:
                 return False, None
 
-            # else return the items in this order. could be an empty array if the order does not yet have any entries
+            # else return the items in this order. could be an empty array if the
+            # order does not yet have any entries
             return d_service.find_by_template(
-                cls.db_schema, cls.order_contents_table, {"order_id": order_id}, offset, limit,
-                fields.split(",") if fields is not None else None
+                cls.db_schema,
+                cls.order_contents_table,
+                {"order_id": order_id},
+                offset,
+                limit,
+                fields.split(",") if fields is not None else None,
             )
 
-
-    @classmethod  # DONE, WORKS!
+    @classmethod
     def retrieve_single_item_in_given_order(cls, order_id, item_id):
         order_exists = cls._order_exists(order_id)
 
@@ -172,7 +214,9 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
 
         # get item with ID in order with ID
         item_in_order = d_service.find_by_template(
-            cls.db_schema, cls.order_contents_table, {"order_id": order_id, "item_id": item_id}
+            cls.db_schema,
+            cls.order_contents_table,
+            {"order_id": order_id, "item_id": item_id},
         )[1]
 
         if item_in_order is None or len(item_in_order) == 0:
@@ -180,8 +224,7 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
         else:
             return item_in_order[0]
 
-
-    @classmethod # DONE
+    @classmethod
     def remove_item_from_order(cls, order_id, item_id):
         order_exists = cls._order_exists(order_id)
 
@@ -190,14 +233,15 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             return None
 
         # check if item already exists in order
-        given_item = cls.retrieve_single_item_in_given_order(
-            order_id, item_id
-        )
+        given_item = cls.retrieve_single_item_in_given_order(order_id, item_id)
 
         # if an item entry exists, delete it
         if given_item is not None and given_item is not False:
             d_service.delete_record_by_multikey(
-                cls.db_schema, cls.order_contents_table, order_id=order_id, item_id=item_id
+                cls.db_schema,
+                cls.order_contents_table,
+                order_id=order_id,
+                item_id=item_id,
             )
             return True
         else:
