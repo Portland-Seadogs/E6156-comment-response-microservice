@@ -55,9 +55,22 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
             or (fields is not None and "links" in fields)
         ):
             for order in found_order_result[1]:
-                order["links"] = cls.retrieve_all_items_in_given_order(
-                    order["order_id"], href=True
-                )[1]
+                item_ids_in_order = [
+                    item["item_id"]
+                    for item in cls.retrieve_all_items_in_given_order(
+                        order["order_id"], href=True
+                    )[1]
+                ]
+                order["items"] = [
+                    {
+                        "item_id": item_id,
+                        "links": {
+                            "href": f'/orders/{order["order_id"]}/orderitems/{item_id}',
+                            "rel": "order_item",
+                        },
+                    }
+                    for item_id in item_ids_in_order
+                ]
 
         return found_order_result
 
@@ -177,15 +190,7 @@ class ArtCatalogOrdersResource(BaseApplicationResource):
                 return res
 
             all_items_in_order = res[1]
-            retval = []
-            for i in all_items_in_order:
-                retval.append(
-                    {
-                        "href": f'/orders/{order_id}/orderitems/{i["item_id"]}',
-                        "rel": "order_item",
-                    }
-                )
-            return True, retval
+            return True, all_items_in_order
         else:
             order_exists = cls._order_exists(order_id)
 

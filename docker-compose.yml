@@ -8,7 +8,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DBHOST=database-2.clbmc2tqyqce.us-east-2.rds.amazonaws.com
-      - DBUSER=admin
-      - DBPASSWORD=seadogs!
+      - DBHOST=
+      - DBUSER=
+      - DBPASSWORD=
       - FLASK_APP=application
