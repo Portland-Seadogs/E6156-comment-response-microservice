@@ -3,7 +3,7 @@
 # setup environment parameters
 export DBHOST=
 export DBUSER=
-export DBPASSWORD= 
+export DBPASSWORD=
 export FLASK_APP='application.py'
 
 # ready to run actual app
