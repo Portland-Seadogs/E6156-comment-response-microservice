@@ -1,7 +1,7 @@
 from flask import Flask, Response, request
 from flask_cors import CORS
 from middleware.security.security import Security
-from application_services.art_catalog_comment_response_resource import ArtCatalogOrdersResource
+from application_services.art_catalog_comment_response_resource import ArtCatalogCommentResponseResource
 from http import HTTPStatus
 import json
 import logging

@@ -4,8 +4,6 @@ import database_services.dynamodb_service as d_service
 
 class ArtCatalogCommentResponseResource(BaseApplicationResource):
     table_name = "comments-responses"
-    order_record_table = "orders"
-    order_contents_table = "order_items"
 
     def __init__(self):
         super().__init__()
