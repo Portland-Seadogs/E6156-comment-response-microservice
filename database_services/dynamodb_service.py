@@ -18,8 +18,8 @@ class DynamoDBServiceException(Exception):
 
 
 dynamodb = boto3.resource('dynamodb',
-                          aws_access_key_id='AKIASQCH4XZK4XDCGYFT',
-                          aws_secret_access_key='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',
+                          aws_access_key_id=,
+                          aws_secret_access_key=,
                           region_name='us-east-2')
 
 
