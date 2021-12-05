@@ -2,7 +2,7 @@ import os
 
 # if you would prefer to write out your keys here when developing locally,
 #   * set the following bool to be false
-#   * fill out lines 13-15 with your keys
+#   * fill out lines 14-16 with your keys
 # REMEMBER: DO NOT COMMIT OR PUSH CHANGES TO THIS FILE!!!
 USE_ENV_VARIABLES = True
 
