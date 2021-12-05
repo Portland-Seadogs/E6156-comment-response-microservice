@@ -6,6 +6,7 @@ import uuid
 from pprint import pprint
 
 import middleware.context as context
+import dynamodb_secrets as secrets
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -18,9 +19,9 @@ class DynamoDBServiceException(Exception):
 
 
 dynamodb = boto3.resource('dynamodb',
-                          aws_access_key_id='',
-                          aws_secret_access_key='',
-                          region_name='')
+                          aws_access_key_id=secrets.AWS_ACCESS_KEY,
+                          aws_secret_access_key=secrets.AWS_SECRET_KEY,
+                          region_name=secrets.AWS_REGION_NAME)
 
 
 # other_client = boto3.client("dynamodb")
