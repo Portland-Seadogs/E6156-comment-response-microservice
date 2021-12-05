@@ -7,6 +7,7 @@ from pprint import pprint
 
 import middleware.context as context
 import database_services.dynamodb_secrets as secrets
+from database_services.dynamodb_errors import DynmamoDBErrors as e
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -70,6 +71,15 @@ def fetch_comment_by_id(comment_id_value):
     response = rsp.get('Item', None)
     return response
 
+
+def get_comments_by_item_id(item_id):
+    """
+    retrieves all comments under the given item id
+    item_id: string
+    """
+    return fetch_all_comments_by_template({'item_id': item_id})
+
+
 #pprint(fetch_comment_by_id('2'))
 
 def add_response(comment_id, responder_id, response_text):
@@ -106,7 +116,7 @@ def add_response(comment_id, responder_id, response_text):
         ReturnValues=ReturnValues
     )
 
-    return res
+    return None, res
 
 #add_response('1', 'maya', 'adding a response!')
 #pprint(fetch_all_comments())
@@ -131,7 +141,7 @@ def post_comment(item_id, commenter_id, comment_text):
         "responses": []
     }
     res = table.put_item(Item=item)
-    return res
+    return None, res
 
 
 # post_comment('4','jake', 'comment about item 4!')
@@ -153,7 +163,7 @@ def update_comment(comment_id, old_version_id, commenter_id, new_comment_text):
     comment_to_update = fetch_comment_by_id(comment_id)
 
     if comment_to_update['commenter_id'] != commenter_id:
-        return DynamoDBServiceException("Users may not edit other users comments")
+        return e.WRONG_USER, "Users may not edit other users comments"
 
     dt = time.time()
     dts = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(dt))
@@ -170,7 +180,7 @@ def update_comment(comment_id, old_version_id, commenter_id, new_comment_text):
         ExpressionAttributeNames= {"#dts": "datetime"}
     )
 
-    return res
+    return None, res
 
 # update_comment('d9d6b8ec-9a0a-49ce-a17e-de091b184fd8', 'jake', 'this is my new comment about item 4')
 # pprint(fetch_all_comments())
@@ -188,7 +198,7 @@ def update_response(comment_id, response_id, new_response_text, responder_id):
     comment_to_update = fetch_comment_by_id(comment_id)
 
     if comment_to_update is None:
-        return DynamoDBServiceException("Parent comment could not be found!")
+        return e.COMMENT_NOT_FOUND, "Parent comment could not be found!"
 
     comment_responses = comment_to_update["responses"]
     index_of_response_to_update = -1
@@ -199,10 +209,10 @@ def update_response(comment_id, response_id, new_response_text, responder_id):
             break
 
     if index_of_response_to_update == -1:
-        return DynamoDBServiceException("The requested response could not be found.")
+        return e.COMMENT_NOT_FOUND, "The requested response could not be found."
 
     if comment_responses[index_of_response_to_update]['responder_id'] != responder_id:
-        return DynamoDBServiceException("Users may not edit other users comments")
+        return e.WRONG_USER, "Users may not edit other users comments"
 
     dt = time.time()
     dts = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(dt))
@@ -223,7 +233,7 @@ def update_response(comment_id, response_id, new_response_text, responder_id):
         ExpressionAttributeNames={"#dts": "datetime"}
     )
 
-    return res
+    return None, res
 
 
 def delete_comment(comment_id, commenter_id):
@@ -235,10 +245,10 @@ def delete_comment(comment_id, commenter_id):
     comment_to_update = fetch_comment_by_id(comment_id)
 
     if comment_to_update is None:
-        return DynamoDBServiceException("Parent comment could not be found!")
+        return e.COMMENT_NOT_FOUND, "Parent comment could not be found!"
 
     if comment_to_update['commenter_id'] != commenter_id:
-        return DynamoDBServiceException("Users may not delete other users comments")
+        return e.WRONG_USER, "Users may not delete other users comments"
 
     res = table.delete_item(
         Key={
@@ -246,7 +256,7 @@ def delete_comment(comment_id, commenter_id):
         }
     )
 
-    return res
+    return None, res
 
 
 def delete_response(comment_id, response_id, responder_id):
@@ -257,7 +267,7 @@ def delete_response(comment_id, response_id, responder_id):
     comment_to_update = fetch_comment_by_id(comment_id)
 
     if comment_to_update is None:
-        return DynamoDBServiceException("Parent comment could not be found!")
+        return e.COMMENT_NOT_FOUND, "Parent comment could not be found!"
 
     comment_responses = comment_to_update["responses"]
     index_of_response_to_update = -1
@@ -268,10 +278,10 @@ def delete_response(comment_id, response_id, responder_id):
             break
 
     if index_of_response_to_update == -1:
-        return DynamoDBServiceException("The requested response could not be found.")
+        return e.COMMENT_NOT_FOUND, "The requested response could not be found."
 
     if comment_responses[index_of_response_to_update]['responder_id'] != responder_id:
-        return DynamoDBServiceException("Users may not delete other users comments")
+        return e.WRONG_USER, "Users may not delete other users responses"
 
     res = table.update_item(
         Key={
@@ -280,4 +290,27 @@ def delete_response(comment_id, response_id, responder_id):
         UpdateExpression=f"REMOVE responses[{index_of_response_to_update}]"
     )
 
-    return res
+    return None, res
+
+
+def fetch_single_response(comment_id, response_id):
+    """
+    fetches a response with response_id = responder_id
+    """
+    comment_to_look_in = fetch_comment_by_id(comment_id)
+
+    if comment_to_look_in is None:
+        return e.COMMENT_NOT_FOUND, "Parent comment could not be found!"
+
+    comment_responses = comment_to_look_in["responses"]
+    index_of_response_to_fetch = -1
+
+    for idx, resp in enumerate(comment_responses):
+        if resp["response_id"] == response_id:
+            index_of_response_to_fetch = idx
+            break
+
+    if index_of_response_to_fetch == -1:
+        return e.COMMENT_NOT_FOUND, "The requested response could not be found."
+    else:
+        return None, comment_responses[index_of_response_to_fetch]
