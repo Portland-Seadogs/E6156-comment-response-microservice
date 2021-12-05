@@ -3,12 +3,12 @@ version: '3.8'
 services:
   order_service:
     build: .
-    container_name: "orders_microservice"
+    container_name: "comment_response_microservice"
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
-      - DBHOST=
-      - DBUSER=
-      - DBPASSWORD=
+      - AWS_ACCESS_KEY=
+      - AWS_SECRET_KEY=
+      - AWS_REGION_NAME=
       - FLASK_APP=application
