@@ -9,3 +9,4 @@ six==1.16.0
 requests==2.26.0
 Werkzeug==2.0.1
 gunicorn==20.1.0
+boto3==1.18.21
