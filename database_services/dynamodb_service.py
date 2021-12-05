@@ -6,7 +6,7 @@ import uuid
 from pprint import pprint
 
 import middleware.context as context
-import dynamodb_secrets as secrets
+import database_services.dynamodb_secrets as secrets
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -185,8 +185,45 @@ def update_response(comment_id, response_id, new_response_text, responder_id):
     I think flow will have to be: iterate through the list to find the index where response_id=response_id,
     then follow the stackoverflow format
     """
+    comment_to_update = fetch_comment_by_id(comment_id)
 
-    return None
+    if comment_to_update is None:
+        return DynamoDBServiceException("Parent comment could not be found!")
+
+    comment_responses = comment_to_update["responses"]
+    index_of_response_to_update = -1
+
+    for idx, resp in enumerate(comment_responses):
+        if resp["response_id"] == response_id:
+            index_of_response_to_update = idx
+            break
+
+    if index_of_response_to_update == -1:
+        return DynamoDBServiceException("The requested response could not be found.")
+
+    if comment_responses[index_of_response_to_update]['responder_id'] != responder_id:
+        return DynamoDBServiceException("Users may not edit other users comments")
+
+    dt = time.time()
+    dts = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(dt))
+    new_version_id = str(uuid.uuid4())
+
+    res = table.update_item(
+        Key={
+            'comment_id': comment_id
+        },
+        UpdateExpression=f"SET responses[{index_of_response_to_update}].response_text = :new_response_text, " +
+                             f"responses[{index_of_response_to_update}].version_id = :new_version_id, " +
+                             f"responses[{index_of_response_to_update}].#dts = :dts",
+        ConditionExpression=f"responses[{index_of_response_to_update}].response_id=:response_id",
+        ExpressionAttributeValues={":new_response_text": new_response_text,
+                                   ":new_version_id": new_version_id,
+                                   ":dts": dts,
+                                   ":response_id": response_id},
+        ExpressionAttributeNames={"#dts": "datetime"}
+    )
+
+    return res
 
 
 def delete_comment(comment_id, commenter_id):
@@ -195,6 +232,21 @@ def delete_comment(comment_id, commenter_id):
     deleting a comment deletes all the responses to the comment
     needs to verify that the user deleting the comment is same as user who created the comment
     """
+    comment_to_update = fetch_comment_by_id(comment_id)
+
+    if comment_to_update is None:
+        return DynamoDBServiceException("Parent comment could not be found!")
+
+    if comment_to_update['commenter_id'] != commenter_id:
+        return DynamoDBServiceException("Users may not delete other users comments")
+
+    res = table.delete_item(
+        Key={
+            'comment_id': comment_id
+        }
+    )
+
+    return res
 
 
 def delete_response(comment_id, response_id, responder_id):
@@ -202,4 +254,30 @@ def delete_response(comment_id, response_id, responder_id):
     deletes a response with response_id = responder_id
     needs to verify that the user deleting the response is the same as the user who created the response
     """
-    return None
+    comment_to_update = fetch_comment_by_id(comment_id)
+
+    if comment_to_update is None:
+        return DynamoDBServiceException("Parent comment could not be found!")
+
+    comment_responses = comment_to_update["responses"]
+    index_of_response_to_update = -1
+
+    for idx, resp in enumerate(comment_responses):
+        if resp["response_id"] == response_id:
+            index_of_response_to_update = idx
+            break
+
+    if index_of_response_to_update == -1:
+        return DynamoDBServiceException("The requested response could not be found.")
+
+    if comment_responses[index_of_response_to_update]['responder_id'] != responder_id:
+        return DynamoDBServiceException("Users may not delete other users comments")
+
+    res = table.update_item(
+        Key={
+            'comment_id': comment_id
+        },
+        UpdateExpression=f"REMOVE responses[{index_of_response_to_update}]"
+    )
+
+    return res
