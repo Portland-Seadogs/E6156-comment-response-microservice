@@ -36,7 +36,7 @@ def health_check():
     return "Hello World"
 
 
-@app.route("/api/comments/<string:item_id>", methods=["GET", "POST"], strict_slashes=False)
+@app.route("/api/items/<string:item_id>/comments", methods=["GET", "POST"], strict_slashes=False)
 def get_post_item_comments(item_id):
     """
     Main query param: item_id
@@ -73,8 +73,8 @@ def get_post_item_comments(item_id):
         )
 
 
-@app.route("/api/comments/<string:item_id>/<string:comment_id>", methods=["GET", "POST", "PUT", "DELETE"], strict_slashes=False)
-def get_update_delete_single_comments(item_id, comment_id):
+@app.route("/api/comments/<string:comment_id>", methods=["GET", "POST", "PUT", "DELETE"], strict_slashes=False)
+def get_update_delete_single_comments(comment_id):
     """
     TODO: Should probably use item ID somehow.
     All methods require the item ID and the comment ID in the query params.
@@ -173,9 +173,9 @@ def get_update_delete_single_comments(item_id, comment_id):
             )
 
 
-@app.route("/api/comments/<string:item_id>/<string:comment_id>/<string:response_id>", methods=["GET", "PUT", "DELETE"],
+@app.route("/api/comments/<string:comment_id>/responses/<string:response_id>", methods=["GET", "PUT", "DELETE"],
            strict_slashes=False)
-def update_delete_single_responses(item_id, comment_id, response_id):
+def update_delete_single_responses(comment_id, response_id):
     """
     All methods require the item ID, response ID, and comment_ID as query params.
     Both methods also require user_id as a JSON body param.
