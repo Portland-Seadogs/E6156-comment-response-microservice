@@ -73,7 +73,7 @@ def get_post_item_comments(item_id):
         )
 
 
-@app.route("/api/comments/<int:item_id>/<int:comment_id>", methods=["GET", "POST", "PUT", "DELETE"], strict_slashes=False)
+@app.route("/api/comments/<int:item_id>/<string:comment_id>", methods=["GET", "POST", "PUT", "DELETE"], strict_slashes=False)
 def get_update_delete_single_comments(item_id, comment_id):
     """
     TODO: Should probably use item ID somehow.
@@ -172,7 +172,7 @@ def get_update_delete_single_comments(item_id, comment_id):
             )
 
 
-@app.route("/api/comments/<int:item_id>/<int:comment_id>/<int:response_id>", methods=["GET", "PUT", "DELETE"],
+@app.route("/api/comments/<int:item_id>/<string:comment_id>/<string:response_id>", methods=["GET", "PUT", "DELETE"],
            strict_slashes=False)
 def update_delete_single_responses(item_id, comment_id, response_id):
     """
