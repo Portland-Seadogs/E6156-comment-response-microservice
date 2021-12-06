@@ -4,6 +4,7 @@ import boto3
 import time
 import uuid
 from pprint import pprint
+from botocore.exceptions import ClientError
 
 import middleware.context as context
 import database_services.dynamodb_secrets as secrets
@@ -70,7 +71,7 @@ def fetch_comment_by_id(comment_id_value):
     rsp = table.get_item(Key={'comment_id': comment_id_value})
     response = rsp.get('Item', None)
     return response
-
+pprint(fetch_comment_by_id('3e0ab1b0-df48-4c65-b238-e3b4ccd8ee76'))
 
 def get_comments_by_item_id(item_id):
     """
@@ -169,25 +170,31 @@ def update_comment(comment_id, old_version_id, commenter_id, new_comment_text):
     dts = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(dt))
     new_version_id = str(uuid.uuid4())
 
-    res = table.update_item(
-        Key= {
-            'comment_id': comment_id
-        },
-        UpdateExpression="SET version_id = :new_version_id, comment_text = :new_comment_text, #dts = :dts",
-        ConditionExpression="version_id=:old_version_id",
-        ExpressionAttributeValues={":old_version_id": old_version_id,":new_comment_text": new_comment_text,
-                                   ":new_version_id": new_version_id, ":dts": dts},
-        ExpressionAttributeNames= {"#dts": "datetime"}
-    )
+    try:
+        res = table.update_item(
+            Key= {
+                'comment_id': comment_id
+            },
+            UpdateExpression="SET version_id = :new_version_id, comment_text = :new_comment_text, #dts = :dts",
+            ConditionExpression="version_id=:old_version_id",
+            ExpressionAttributeValues={":old_version_id": old_version_id,":new_comment_text": new_comment_text,
+                                       ":new_version_id": new_version_id, ":dts": dts},
+            ExpressionAttributeNames= {"#dts": "datetime"}
+        )
+    except ClientError as err:
+        if err.response['Error']['Code']=='ConditionalCheckFailedException':
+            return e.WRITE_WRITE_CONFLICT, "VersionID incorrect- Write Write conflict"
+        else:
+            return e.COMMENT_NOT_FOUND, "Update failed"
 
     return None, res
 
-# update_comment('d9d6b8ec-9a0a-49ce-a17e-de091b184fd8', 'jake', 'this is my new comment about item 4')
+#update_comment("3e0ab1b0-df48-4c65-b238-e3b4ccd8ee76", '1234', 'TK', 'new comment')
 # pprint(fetch_all_comments())
 # pprint(fetch_comment_by_id('d9d6b8ec-9a0a-49ce-a17e-de091b184fd8'))
 
 
-def update_response(comment_id, response_id, new_response_text, responder_id):
+def update_response(comment_id, response_id, new_response_text, responder_id, old_version_id):
     """
     same as update comment but for response
     This post shows how to update one map item in a list in dynamo
@@ -217,22 +224,27 @@ def update_response(comment_id, response_id, new_response_text, responder_id):
     dt = time.time()
     dts = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(dt))
     new_version_id = str(uuid.uuid4())
-
-    res = table.update_item(
-        Key={
-            'comment_id': comment_id
-        },
-        UpdateExpression=f"SET responses[{index_of_response_to_update}].response_text = :new_response_text, " +
-                             f"responses[{index_of_response_to_update}].version_id = :new_version_id, " +
-                             f"responses[{index_of_response_to_update}].#dts = :dts",
-        ConditionExpression=f"responses[{index_of_response_to_update}].response_id=:response_id",
-        ExpressionAttributeValues={":new_response_text": new_response_text,
-                                   ":new_version_id": new_version_id,
-                                   ":dts": dts,
-                                   ":response_id": response_id},
-        ExpressionAttributeNames={"#dts": "datetime"}
-    )
-
+    try:
+        res = table.update_item(
+            Key={
+                'comment_id': comment_id
+            },
+            UpdateExpression=f"SET responses[{index_of_response_to_update}].response_text = :new_response_text, " +
+                                 f"responses[{index_of_response_to_update}].version_id = :new_version_id, " +
+                                 f"responses[{index_of_response_to_update}].#dts = :dts",
+            ConditionExpression=f"responses[{index_of_response_to_update}].version_id=:old_version_id",
+            ExpressionAttributeValues={":new_response_text": new_response_text,
+                                       ":new_version_id": new_version_id,
+                                       ":dts": dts,
+                                       ":old_version_id": old_version_id},
+            ExpressionAttributeNames={"#dts": "datetime"}
+        )
+    except ClientError as err:
+        if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            return e.WRITE_WRITE_CONFLICT, "VersionID incorrect- Write Write conflict"
+        else:
+            print(err)
+            return e.COMMENT_NOT_FOUND, "Update failed"
     return None, res
 
 

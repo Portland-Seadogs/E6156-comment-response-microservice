@@ -36,14 +36,14 @@ def health_check():
     return "Hello World"
 
 
-@app.route("/api/comments/<int:item_id>", methods=["GET", "POST"], strict_slashes=False)
+@app.route("/api/comments/<string:item_id>", methods=["GET", "POST"], strict_slashes=False)
 def get_post_item_comments(item_id):
     """
     Main query param: item_id
     GET -- gets all comments under a given item ID
         * Does not expect any other params.
     POST -- adds a new comment under a given item ID.
-        * Expects a JSON body in the request, consisting of the following keys: user_id, comment_text.
+        * Expects a JSON body in the request, consisting of the following keys: user_id, comment_text
         * POST issues a 400 error if these keys are missing from the body.
     """
     if request.method == "GET":
@@ -73,7 +73,7 @@ def get_post_item_comments(item_id):
         )
 
 
-@app.route("/api/comments/<int:item_id>/<string:comment_id>", methods=["GET", "POST", "PUT", "DELETE"], strict_slashes=False)
+@app.route("/api/comments/<string:item_id>/<string:comment_id>", methods=["GET", "POST", "PUT", "DELETE"], strict_slashes=False)
 def get_update_delete_single_comments(item_id, comment_id):
     """
     TODO: Should probably use item ID somehow.
@@ -87,6 +87,7 @@ def get_update_delete_single_comments(item_id, comment_id):
     PUT -- updates a comment with the given comment ID.
         * Expects a JSON body in the request, consisting of the following keys: user_id, old_version_id, new_comment_text.
         * 400 if the necessary JSON body params are not provided.
+        * 409 for a Write-Write conflict
         * 403/404 for other errors.
     DELETE -- deletes a comment with the given ID
         * Expects a JSON body in the request, consisting of the following keys: user_id
@@ -172,7 +173,7 @@ def get_update_delete_single_comments(item_id, comment_id):
             )
 
 
-@app.route("/api/comments/<int:item_id>/<string:comment_id>/<string:response_id>", methods=["GET", "PUT", "DELETE"],
+@app.route("/api/comments/<string:item_id>/<string:comment_id>/<string:response_id>", methods=["GET", "PUT", "DELETE"],
            strict_slashes=False)
 def update_delete_single_responses(item_id, comment_id, response_id):
     """
@@ -184,7 +185,7 @@ def update_delete_single_responses(item_id, comment_id, response_id):
         * 404 if the given comment/response cannot be found.
     GET -- Retrieve a single response.
     PUT -- Updates a response.
-        * Requires an additional JSON body param: new_response_text
+        * Requires additional JSON body params: new_response_text and old_version_id
     DELETE -- Deletes a response.
     """
     if request.method == "GET":
@@ -206,15 +207,16 @@ def update_delete_single_responses(item_id, comment_id, response_id):
         request_base_info = request.get_json()
         user_id = request_base_info.get("user_id", None)
         new_response_text = request_base_info.get("new_response_text", None)
+        old_version_id = request_base_info.get("old_version_id", None)
 
-        if user_id is None or new_response_text is None:
+        if user_id is None or new_response_text is None or old_version_id is None:
             return Response(
                 form_response_json("bad request - user/response_text", None),
                 status=HTTPStatus.BAD_REQUEST,
                 content_type="application/json",
             )
 
-        result = db.update_response(comment_id, response_id, new_response_text, user_id)
+        result = db.update_response(comment_id, response_id, new_response_text, user_id, old_version_id)
 
     else:  # elif request.method == "DELETE":
         request_base_info = request.get_json()
