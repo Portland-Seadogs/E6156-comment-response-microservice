@@ -187,16 +187,6 @@ def update_delete_single_responses(item_id, comment_id, response_id):
         * Requires an additional JSON body param: new_response_text
     DELETE -- Deletes a response.
     """
-    request_base_info = request.get_json()
-    user_id = request_base_info.get("user_id", None)
-
-    if user_id is None:
-        return Response(
-            form_response_json("bad request - user", None),
-            status=HTTPStatus.BAD_REQUEST,
-            content_type="application/json",
-        )
-
     if request.method == "GET":
         result = db.fetch_single_response(comment_id, response_id)
 
@@ -213,11 +203,13 @@ def update_delete_single_responses(item_id, comment_id, response_id):
                 content_type="application/json",
             )
     elif request.method == "PUT":
+        request_base_info = request.get_json()
+        user_id = request_base_info.get("user_id", None)
         new_response_text = request_base_info.get("new_response_text", None)
 
-        if new_response_text is None:
+        if user_id is None or new_response_text is None:
             return Response(
-                form_response_json("bad request - response_text", None),
+                form_response_json("bad request - user/response_text", None),
                 status=HTTPStatus.BAD_REQUEST,
                 content_type="application/json",
             )
@@ -225,6 +217,16 @@ def update_delete_single_responses(item_id, comment_id, response_id):
         result = db.update_response(comment_id, response_id, new_response_text, user_id)
 
     else:  # elif request.method == "DELETE":
+        request_base_info = request.get_json()
+        user_id = request_base_info.get("user_id", None)
+
+        if user_id is None:
+            return Response(
+                form_response_json("bad request - user", None),
+                status=HTTPStatus.BAD_REQUEST,
+                content_type="application/json",
+            )
+
         result = db.delete_response(comment_id, response_id, user_id)
 
     if result[0] is not None:
